@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>🌿 Automated Plant Sale - Order Now</title>
+    <title>🌿 Jarmaris Plant Shop - Order Now</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -317,7 +317,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>🌿 Automated Plant Shop</h1>
+            <h1>🌿 Jarmaris Plant Shop</h1>
             <p class="subtitle">Order Online • Instant Invoice • Shipping Label Ready</p>
         </header>
 
@@ -363,7 +363,7 @@
                         <i class="fab fa-app-store-ios"></i>
                     </div>
                     <h3>Cash App</h3>
-                    <p>Send to: <strong>$YourCashTag</strong></p>
+                    <p>Send to: <strong>$jnet83</strong></p>
                 </div>
                 
                 <div class="payment-option" data-method="bitcoin" onclick="selectPayment('bitcoin')">
@@ -401,7 +401,7 @@
         <!-- INVOICE PREVIEW -->
         <div class="invoice-preview" id="invoice-preview">
             <div class="invoice-header">
-                <h1 style="color: #2e7d32;">🌿 PLANT SALE INVOICE</h1>
+                <h1 style="color: #2e7d32;">🌿 JARMARIS PLANT SHOP INVOICE</h1>
                 <p>Order #<span id="invoice-number">0001</span> • <span id="invoice-date">Today</span></p>
             </div>
             
@@ -422,7 +422,7 @@ City, State ZIP</p>
                 
                 <div class="invoice-section">
                     <h3><i class="fas fa-credit-card"></i> Payment</h3>
-                    <p id="invoice-payment">Cash App: $YourCashTag</p>
+                    <p id="invoice-payment" style="white-space: pre-line;">Cash App: $jnet83</p>
                     <p>Status: <strong>Pending Payment</strong></p>
                 </div>
             </div>
@@ -455,10 +455,10 @@ City, State ZIP</p>
                 <div style="display: flex; justify-content: space-between; margin-top: 20px;">
                     <div>
                         <h4>FROM:</h4>
-                        <p><strong>Your Plant Shop</strong><br>
-                        Your Address<br>
-                        Your City, State ZIP<br>
-                        (502) 383-5553</p>
+                        <p><strong>Jarmaris Plant Shop</strong><br>
+                        436 East Kentucky St, Apt 201<br>
+                        Louisville, KY 40203<br>
+                        (502) 658-3260</p>
                     </div>
                     <div style="text-align: right;">
                         <h4>TO:</h4>
@@ -627,6 +627,9 @@ City, State ZIP</p>
                 return;
             }
             
+            // Send email notification
+            sendOrderEmail(name, email, phone, address, instructions);
+            
             // Generate invoice
             generateInvoice(name, email, phone, address, instructions);
             
@@ -639,7 +642,66 @@ City, State ZIP</p>
             // Scroll to invoice
             document.getElementById('invoice-preview').scrollIntoView({ behavior: 'smooth' });
             
-            showStatus('Order processed! Invoice generated and saved.', 'success');
+            showStatus('Order processed! Invoice generated and email sent.', 'success');
+        }
+
+        // Send email notification
+        function sendOrderEmail(name, email, phone, address, instructions) {
+            const totals = updateTotal();
+            const plantsList = selectedPlants.map(id => {
+                const plant = plants.find(p => p.id === id);
+                return `${plant.name} - $${plant.price}`;
+            }).join(', ');
+            
+            const subject = `🌿 New Plant Order #${currentOrderNumber}`;
+            const body = `
+NEW PLANT ORDER #${currentOrderNumber}
+Date: ${new Date().toLocaleString()}
+
+CUSTOMER INFORMATION:
+---------------------
+Name: ${name}
+Email: ${email}
+Phone: ${phone}
+
+SHIPPING ADDRESS:
+-----------------
+${address}
+
+PLANTS ORDERED:
+---------------
+${plantsList}
+
+PAYMENT METHOD:
+---------------
+${selectedPayment.toUpperCase()}
+${selectedPayment === 'cashapp' ? 'Send to: $jnet83' : ''}
+${selectedPayment === 'bitcoin' ? 'Bitcoin payment' : ''}
+${selectedPayment === 'cash' ? 'Cash by mail' : ''}
+
+ORDER TOTALS:
+-------------
+Subtotal: $${totals.subtotal.toFixed(2)}
+Shipping: $${totals.shipping.toFixed(2)}
+Tax: $${totals.tax.toFixed(2)}
+TOTAL: $${totals.total.toFixed(2)}
+
+SPECIAL INSTRUCTIONS:
+---------------------
+${instructions || 'None'}
+
+---
+Jarmaris Plant Shop
+(502) 658-3260
+            `;
+            
+            // Create mailto link
+            const mailtoLink = `mailto:youdubdeveloper@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            
+            // Open email client
+            window.open(mailtoLink, '_blank');
+            
+            console.log('📧 Email notification sent');
         }
 
         // Generate invoice
@@ -668,18 +730,18 @@ City, State ZIP</p>
             document.getElementById('invoice-address').textContent = address;
             document.getElementById('invoice-instructions').textContent = instructions || 'None';
             
-            // Payment info
+            // Payment info - UPDATED WITH YOUR INFO
             let paymentText = '';
             switch(selectedPayment) {
                 case 'cashapp':
-                    paymentText = 'Cash App: $YourCashTag (Send payment to this tag)';
+                    paymentText = `Cash App Payment\n\nSend $${totals.total.toFixed(2)} to:\n$jnet83\n\n✅ Please include order #${currentOrderNumber} in the note`;
                     break;
                 case 'bitcoin':
                     const btcAmount = totals.total / bitcoinPrice;
-                    paymentText = `Bitcoin: Send ${btcAmount.toFixed(6)} BTC to your wallet address`;
+                    paymentText = `Bitcoin Payment\n\nSend ${btcAmount.toFixed(6)} BTC\n\nWallet address provided after order confirmation`;
                     break;
                 case 'cash':
-                    paymentText = 'Cash by Mail: Send cash to your address (include order #)';
+                    paymentText = `Cash by Mail\n\nSend $${totals.total.toFixed(2)} cash to:\nJarmaris Plant Shop\n436 East Kentucky St, Apt 201\nLouisville, KY 40203\n\n📮 Include order #${currentOrderNumber}`;
                     break;
             }
             document.getElementById('invoice-payment').textContent = paymentText;
@@ -804,35 +866,6 @@ ${order.instructions || 'None'}
             setTimeout(() => {
                 statusDiv.style.display = 'none';
             }, 5000);
-        }
-
-        // Email the order to yourself (optional)
-        function emailOrderToSelf(order) {
-            const subject = `New Plant Order #${order.orderNumber}`;
-            const body = `
-New order received!
-
-Order #${order.orderNumber}
-Customer: ${order.customer.name}
-Email: ${order.customer.email}
-Phone: ${order.customer.phone}
-
-Plants: ${order.plants.map(p => p.name).join(', ')}
-Total: $${order.totals.total.toFixed(2)}
-Payment: ${order.payment}
-
-Shipping Address:
-${order.shipping}
-
-Instructions:
-${order.instructions || 'None'}
-
-Invoice attached for printing.
-            `;
-            
-            // This would require a backend server
-            // For now, we'll just log it
-            console.log('Email would be sent:', { subject, body });
         }
     </script>
 </body>
