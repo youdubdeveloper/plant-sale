@@ -6,12 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6; color: #333;
-            background: linear-gradient(135deg, #f9f9f9 0%, #e8f5e9 100%);
-            max-width: 900px; margin: 0 auto; padding: 20px; min-height: 100vh;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #f9f9f9 0%, #e8f5e9 100%); max-width: 900px; margin: 0 auto; padding: 20px; min-height: 100vh; }
         .container { background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); padding: 40px; margin: 20px 0; }
         header { text-align: center; margin-bottom: 40px; padding: 30px; background: linear-gradient(135deg, #FF9900, #F7931A); border-radius: 15px; color: white; }
         h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
@@ -58,17 +53,14 @@
         <p class="subtitle">Bitcoin Only • Secure • Automated</p>
         <div class="bitcoin-badge"><i class="fab fa-bitcoin"></i> BITCOIN ONLY</div>
     </header>
-
     <h2 style="color:#F7931A; margin-bottom:20px; text-align:center;">Select Your Plants ($25 Each)</h2>
     <div class="plant-grid" id="plants-container"></div>
-
     <div class="order-form">
         <h2 style="color:#F7931A; margin-bottom:25px;">Shipping Information</h2>
         <div class="form-group"><label for="customer-name"><i class="fas fa-user"></i> Full Name</label><input type="text" id="customer-name" class="form-control" required></div>
         <div class="form-group"><label for="customer-email"><i class="fas fa-envelope"></i> Email Address</label><input type="email" id="customer-email" class="form-control" required></div>
         <div class="form-group"><label for="customer-phone"><i class="fas fa-phone"></i> Phone Number</label><input type="tel" id="customer-phone" class="form-control" required></div>
         <div class="form-group"><label for="shipping-address"><i class="fas fa-home"></i> Shipping Address</label><textarea id="shipping-address" class="form-control" rows="4" required></textarea></div>
-
         <div class="bitcoin-payment-box">
             <h2 style="color:#F7931A; margin-bottom:20px;"><i class="fab fa-bitcoin"></i> Bitcoin Payment Required</h2>
             <p><strong>Send to:</strong></p>
@@ -77,7 +69,6 @@
             <p style="margin:15px 0;"><strong>Exact amount:</strong></p>
             <div class="qrcode-container"><div id="bitcoin-qrcode"></div></div>
         </div>
-
         <div class="total-box">
             <h3>Bitcoin Payment Amount</h3>
             <div class="total-amount" id="total-display">$0.00</div>
@@ -85,12 +76,10 @@
             <p>Includes shipping & tax</p>
             <p>Live BTC rate: <span id="btc-rate">$45,000</span>/BTC</p>
         </div>
-
         <button class="btn-submit" onclick="processOrder()"><i class="fab fa-bitcoin"></i> Place Order</button>
         <div id="status-message" class="status-message"></div>
     </div>
 </div>
-
 <script>
 const BITCOIN_ADDRESS = "BC1Q9TRX548KWSV9KQE767U40DATPQM34UUULW763N";
 const plants = [
@@ -98,17 +87,14 @@ const plants = [
     {id:'lily', name:'Peace Lily', price:25, shipping:8, image:'https://raw.githubusercontent.com/youdubdeveloper/plant-sale/main/plant-sale-images/peace-lilly.jpg', description:'Air purifying, low light', inventory:100},
     {id:'aloe', name:'Aloe Vera', price:25, shipping:8, image:'https://raw.githubusercontent.com/youdubdeveloper/plant-sale/main/plant-sale-images/aloe-vera.jpg', description:'Medicinal, drought tolerant', inventory:100}
 ];
-
 let selectedPlants = [];
 let bitcoinPrice = 45000;
-
 document.addEventListener('DOMContentLoaded', () => {
     loadPlants();
     updateBitcoinPrice();
     displayBitcoinAddress();
     updateTotal();
 });
-
 function loadPlants() {
     const container = document.getElementById('plants-container');
     container.innerHTML = '';
@@ -129,7 +115,6 @@ function loadPlants() {
         container.appendChild(div);
     });
 }
-
 function togglePlant(id) {
     const plant = plants.find(p => p.id === id);
     if (!plant || plant.inventory <= 0) return;
@@ -143,7 +128,6 @@ function togglePlant(id) {
     });
     updateTotal();
 }
-
 async function updateBitcoinPrice() {
     try {
         const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
@@ -153,30 +137,24 @@ async function updateBitcoinPrice() {
         updateTotal();
     } catch {}
 }
-
 function displayBitcoinAddress() {
     const url = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=bitcoin:${BITCOIN_ADDRESS}`;
     document.getElementById('bitcoin-qrcode').innerHTML = `<img src="${url}" style="width:100%;">`;
 }
-
 function copyBitcoinAddress() {
     navigator.clipboard.writeText(BITCOIN_ADDRESS);
     showStatus('Address copied!', 'success');
 }
-
 function updateTotal() {
     let subtotal = selectedPlants.length * 25;
     let shipping = selectedPlants.length * 8;
     let tax = subtotal * 0.06;
     let totalUSD = subtotal + shipping + tax;
     let totalBTC = totalUSD / bitcoinPrice;
-
     document.getElementById('total-display').textContent = `$${totalUSD.toFixed(2)}`;
     document.getElementById('btc-amount-display').textContent = `${totalBTC.toFixed(6)} BTC`;
-
     return {subtotal, shipping, tax, totalUSD, totalBTC};
 }
-
 function showStatus(msg, type) {
     const el = document.getElementById('status-message');
     el.textContent = msg;
@@ -184,35 +162,31 @@ function showStatus(msg, type) {
     el.style.display = 'block';
     setTimeout(() => el.style.display = 'none', 5000);
 }
-
 function processOrder() {
     const name = document.getElementById('customer-name').value.trim();
     const email = document.getElementById('customer-email').value.trim();
     const phone = document.getElementById('customer-phone').value.trim();
     const address = document.getElementById('shipping-address').value.trim();
-
     if (!name || !email || !phone || !address || selectedPlants.length === 0) {
         showStatus('Fill all fields & select plants', 'error');
         return;
     }
-
     const totals = updateTotal();
-
     selectedPlants.forEach(id => {
         const p = plants.find(p => p.id === id);
         if (p) p.inventory--;
     });
-
     selectedPlants = [];
     document.querySelectorAll('.plant-item').forEach(el => el.classList.remove('selected'));
-
     showStatus('Order placed! Check email for BTC instructions.', 'success');
     updateTotal();
     loadPlants();
 
-   const mailtoLink = `mailto:youdubdeveloper@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}&cc=${encodeURIComponent(email)}`;
+    const subject = `Bitcoin Plant Order - Payment Required`;
+    const body = `New order from ${name}\nEmail: ${email}\nPhone: ${phone}\nAddress: ${address}\nTotal: $${totals.totalUSD.toFixed(2)} (${totals.totalBTC.toFixed(6)} BTC)\nSend to: ${BITCOIN_ADDRESS}`;
+    const mailtoLink = `mailto:youdubdeveloper@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}&cc=${encodeURIComponent(email)}`;
+    window.open(mailtoLink);
 }
 </script>
 </body>
 </html>
-
