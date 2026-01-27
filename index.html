@@ -210,9 +210,9 @@ function processOrder() {
     updateTotal();
     loadPlants();
 
-    const mailto = `mailto:${email}?subject=Bitcoin Plant Order - Payment Required&body=Send exactly ${totals.totalBTC.toFixed(6)} BTC to ${BITCOIN_ADDRESS}`;
-    window.open(mailto);
+   const mailtoLink = `mailto:youdubdeveloper@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}&cc=${encodeURIComponent(email)}`;
 }
 </script>
 </body>
 </html>
+
