@@ -54,6 +54,15 @@
             font-weight: bold;
         }
         
+        .inventory-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin: 5px;
+            font-size: 0.9em;
+        }
+        
         .plant-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -78,7 +87,18 @@
             box-shadow: 0 5px 20px rgba(247, 147, 26, 0.3);
         }
         
-        .plant-item:hover {
+        .plant-item.out-of-stock {
+            opacity: 0.6;
+            cursor: not-allowed;
+            border-color: #dc3545;
+        }
+        
+        .plant-item.out-of-stock:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .plant-item:hover:not(.out-of-stock) {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
@@ -97,6 +117,25 @@
             font-weight: bold;
             color: #2e7d32;
             margin: 10px 0;
+        }
+        
+        .plant-inventory {
+            background: #e3f2fd;
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        
+        .plant-inventory.low {
+            background: #ffecb3;
+            color: #ff9800;
+        }
+        
+        .plant-inventory.out {
+            background: #ffcdd2;
+            color: #d32f2f;
         }
         
         .plant-checkbox {
@@ -291,6 +330,28 @@
             background: #3d8b40;
         }
         
+        .waitlist-form {
+            background: #e3f2fd;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px 0;
+            border: 3px solid #2196f3;
+        }
+        
+        .inventory-summary {
+            background: #f3e5f5;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .sold-count {
+            font-size: 2em;
+            font-weight: bold;
+            color: #F7931A;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -311,12 +372,42 @@
             <h1>🌿 Bitcoin Plant Sale</h1>
             <p class="subtitle">Bitcoin Only • Secure • Automated</p>
             <div class="bitcoin-badge">
-                <i class="fab fa-bitcoin"></i> BITCOIN ONLY • NO CASH APP
+                <i class="fab fa-bitcoin"></i> BITCOIN ONLY
+            </div>
+            <div class="inventory-badge">
+                <i class="fas fa-seedling"></i> Total Inventory: <span id="total-inventory">100</span> plants
+            </div>
+            <div class="inventory-badge">
+                <i class="fas fa-shopping-cart"></i> Sold Today: <span id="sold-today">0</span>
             </div>
         </header>
 
+        <!-- INVENTORY SUMMARY -->
+        <div class="inventory-summary">
+            <h3 style="color: #7b1fa2; margin-bottom: 15px;">
+                <i class="fas fa-chart-line"></i> Live Inventory
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                <div>
+                    <div class="sold-count" id="pineapple-count">33</div>
+                    <p>Pineapple Plants</p>
+                </div>
+                <div>
+                    <div class="sold-count" id="lily-count">33</div>
+                    <p>Peace Lilies</p>
+                </div>
+                <div>
+                    <div class="sold-count" id="aloe-count">34</div>
+                    <p>Aloe Vera</p>
+                </div>
+            </div>
+            <p style="margin-top: 15px; color: #666;">
+                <i class="fas fa-info-circle"></i> Inventory updates automatically after each order
+            </p>
+        </div>
+
         <!-- PLANTS SELECTION -->
-        <h2 style="color: #F7931A; margin-bottom: 20px;">Select Your Plants</h2>
+        <h2 style="color: #F7931A; margin-bottom: 20px;">Select Your Plants ($25 Each)</h2>
         <div class="plant-grid" id="plants-container">
             <!-- Plants will be loaded here -->
         </div>
@@ -388,6 +479,30 @@
             <div id="status-message" class="status-message"></div>
         </div>
         
+        <!-- WAITLIST FORM -->
+        <div class="waitlist-form" id="waitlist-section" style="display: none;">
+            <h3 style="color: #2196f3; margin-bottom: 15px;">
+                <i class="fas fa-bell"></i> Join Waitlist for Out-of-Stock Plants
+            </h3>
+            <p style="margin-bottom: 15px;">Get notified when your favorite plants are back in stock!</p>
+            
+            <div class="form-group">
+                <label for="waitlist-email"><i class="fas fa-envelope"></i> Your Email</label>
+                <input type="email" id="waitlist-email" class="form-control" placeholder="your@email.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="waitlist-plant"><i class="fas fa-seedling"></i> Plant You Want</label>
+                <select id="waitlist-plant" class="form-control" required>
+                    <option value="">Select a plant</option>
+                </select>
+            </div>
+            
+            <button class="btn-submit" style="background: linear-gradient(135deg, #2196f3, #1976d2);" onclick="joinWaitlist()">
+                <i class="fas fa-bell"></i> Join Waitlist
+            </button>
+        </div>
+        
         <!-- INVOICE PREVIEW -->
         <div class="invoice-preview" id="invoice-preview">
             <!-- Invoice will be generated here -->
@@ -395,41 +510,49 @@
     </div>
 
     <script>
-        // Plants data - UPDATE THESE IMAGE PATHS
+        // Your Bitcoin address
+        const BITCOIN_ADDRESS = "BC1Q9TRX548KWSV9KQE767U40DATPQM34UUULW763N";
+        
+        // Plants data - ALL $25 EACH with your GitHub images
         const plants = [
             {
                 id: 'pineapple',
                 name: 'Pineapple Plant',
-                price: 65,
-                shipping: 12,
-                image: 'pineapple-plant.jpg', // Update this path
-                description: 'Grows edible pineapples in 18-24 months'
+                price: 25,
+                shipping: 8,
+                image: 'https://raw.githubusercontent.com/youdubdeveloper/plant-sale/main/plant-sale-images/pineapple-plant.jpg',
+                description: 'Grows edible pineapples in 18-24 months',
+                inventory: 33,
+                originalInventory: 33
             },
             {
                 id: 'lily',
                 name: 'Peace Lily',
-                price: 35,
-                shipping: 10,
-                image: 'peace-lily.jpg', // Update this path
-                description: 'Air purifying, pet-safe, low light'
+                price: 25,
+                shipping: 8,
+                image: 'https://raw.githubusercontent.com/youdubdeveloper/plant-sale/main/plant-sale-images/peace-lily.jpg',
+                description: 'Air purifying, pet-safe, low light',
+                inventory: 33,
+                originalInventory: 33
             },
             {
                 id: 'aloe',
                 name: 'Aloe Vera',
                 price: 25,
                 shipping: 8,
-                image: 'aloe-vera.jpg', // Update this path
-                description: 'Medicinal, easy care, drought tolerant'
+                image: 'https://raw.githubusercontent.com/youdubdeveloper/plant-sale/main/plant-sale-images/aloe-vera.jpg',
+                description: 'Medicinal, easy care, drought tolerant',
+                inventory: 34,
+                originalInventory: 34
             }
         ];
 
-        // Your Bitcoin address
-        const BITCOIN_ADDRESS = "BC1Q9TRX548KWSV9KQE767U40DATPQM34UUULW763N";
-        
         // Current order state
         let selectedPlants = [];
         let currentOrderNumber = Math.floor(1000 + Math.random() * 9000);
         let bitcoinPrice = 45000;
+        let totalSoldToday = 0;
+        let waitlistData = JSON.parse(localStorage.getItem('plantWaitlist') || '[]');
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -437,6 +560,7 @@
             updateBitcoinPrice();
             updateTotal();
             displayBitcoinAddress();
+            updateInventoryDisplay();
         });
 
         // Load plants into grid with images
@@ -447,18 +571,36 @@
             plants.forEach(plant => {
                 const plantElement = document.createElement('div');
                 plantElement.className = 'plant-item';
-                plantElement.onclick = () => togglePlant(plant.id);
+                if (plant.inventory <= 0) {
+                    plantElement.classList.add('out-of-stock');
+                }
+                
+                let inventoryClass = 'plant-inventory';
+                if (plant.inventory <= 0) inventoryClass += ' out';
+                else if (plant.inventory <= 5) inventoryClass += ' low';
+                
                 plantElement.innerHTML = `
                     <img src="${plant.image}" alt="${plant.name}" class="plant-image" 
                          onerror="this.onerror=null; this.src='${getStockPhoto(plant.id)}'">
                     <h3>${plant.name}</h3>
                     <p style="color: #666; margin: 10px 0;">${plant.description}</p>
                     <div class="plant-price">$${plant.price}</div>
+                    <div class="${inventoryClass}">
+                        ${plant.inventory <= 0 ? 'Out of Stock' : `${plant.inventory} left in stock`}
+                    </div>
                     <p style="font-size: 0.9em; color: #6b7280;">Shipping: $${plant.shipping}</p>
                     <div class="plant-checkbox"></div>
                 `;
+                
+                if (plant.inventory > 0) {
+                    plantElement.onclick = () => togglePlant(plant.id);
+                }
+                
                 container.appendChild(plantElement);
             });
+            
+            updateInventoryDisplay();
+            checkOutOfStock();
         }
 
         // Fallback stock photos if your images don't load
@@ -473,6 +615,9 @@
 
         // Toggle plant selection
         function togglePlant(plantId) {
+            const plant = plants.find(p => p.id === plantId);
+            if (!plant || plant.inventory <= 0) return;
+            
             const plantElement = document.querySelector(`.plant-item:nth-child(${plants.findIndex(p => p.id === plantId) + 1})`);
             
             if (selectedPlants.includes(plantId)) {
@@ -501,7 +646,6 @@
 
         // Display Bitcoin address
         function displayBitcoinAddress() {
-            // Generate QR code with amount parameter (will be updated when order is placed)
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=bitcoin:${BITCOIN_ADDRESS}`;
             document.getElementById('bitcoin-qrcode').innerHTML = `<img src="${qrUrl}" alt="Bitcoin QR Code" style="width:100%;">`;
         }
@@ -535,6 +679,36 @@
             return { subtotal, shipping, tax, totalUSD, totalBTC };
         }
 
+        // Update inventory display
+        function updateInventoryDisplay() {
+            let totalInventory = 0;
+            
+            plants.forEach(plant => {
+                document.getElementById(`${plant.id}-count`).textContent = plant.inventory;
+                totalInventory += plant.inventory;
+            });
+            
+            document.getElementById('total-inventory').textContent = totalInventory;
+            document.getElementById('sold-today').textContent = totalSoldToday;
+        }
+
+        // Check for out-of-stock plants
+        function checkOutOfStock() {
+            const outOfStockPlants = plants.filter(p => p.inventory <= 0);
+            
+            if (outOfStockPlants.length > 0) {
+                document.getElementById('waitlist-section').style.display = 'block';
+                const select = document.getElementById('waitlist-plant');
+                select.innerHTML = '<option value="">Select a plant</option>';
+                
+                outOfStockPlants.forEach(plant => {
+                    select.innerHTML += `<option value="${plant.id}">${plant.name}</option>`;
+                });
+            } else {
+                document.getElementById('waitlist-section').style.display = 'none';
+            }
+        }
+
         // Process order
         function processOrder() {
             const name = document.getElementById('customer-name').value.trim();
@@ -552,24 +726,107 @@
                 return;
             }
             
+            // Check inventory
+            for (const plantId of selectedPlants) {
+                const plant = plants.find(p => p.id === plantId);
+                if (plant.inventory <= 0) {
+                    showStatus(`Sorry, ${plant.name} is out of stock!`, 'error');
+                    return;
+                }
+            }
+            
             const totals = updateTotal();
             
-            // 1. Send email to CUSTOMER with payment instructions
-            sendCustomerEmail(name, email, phone, address, totals);
+            // Update inventory
+            selectedPlants.forEach(plantId => {
+                const plant = plants.find(p => p.id === plantId);
+                if (plant) {
+                    plant.inventory--;
+                    totalSoldToday++;
+                }
+            });
             
-            // 2. Send PRIVATE notifications to YOU
+            // Send notifications
+            sendCustomerEmail(name, email, phone, address, totals);
             sendOwnerNotifications(name, email, phone, address, totals);
             
-            // 3. Show success message
+            // Show success
             showStatus('✅ Order placed! Check your email for Bitcoin payment instructions.', 'success');
             
-            // 4. Generate invoice
+            // Update inventory display
+            loadPlants();
+            updateInventoryDisplay();
+            
+            // Generate invoice
             generateInvoice(name, email, phone, address, totals);
             
-            // 5. Clear form after delay
+            // Clear form after delay
             setTimeout(() => {
                 clearForm();
             }, 3000);
+        }
+
+        // Join waitlist
+        function joinWaitlist() {
+            const email = document.getElementById('waitlist-email').value.trim();
+            const plantId = document.getElementById('waitlist-plant').value;
+            
+            if (!email || !plantId) {
+                showStatus('Please fill in all waitlist fields', 'error');
+                return;
+            }
+            
+            const plant = plants.find(p => p.id === plantId);
+            if (!plant) return;
+            
+            // Add to waitlist
+            waitlistData.push({
+                email: email,
+                plantId: plantId,
+                plantName: plant.name,
+                date: new Date().toISOString()
+            });
+            
+            localStorage.setItem('plantWaitlist', JSON.stringify(waitlistData));
+            
+            // Send waitlist confirmation
+            const subject = `🌿 Waitlist Confirmation - ${plant.name}`;
+            const body = `
+You've been added to the waitlist for: ${plant.name}
+
+We'll notify you as soon as this plant is back in stock!
+
+You can expect:
+• Email notification when available
+• Priority ordering access
+• 24-hour reservation window
+
+Thank you for your interest!
+Plant Sale Team 🌿
+            `;
+            
+            const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.open(mailtoLink, '_blank');
+            
+            // Notify owner
+            const ownerSubject = `📋 New Waitlist Signup - ${plant.name}`;
+            const ownerBody = `
+NEW WAITLIST SIGNUP:
+Plant: ${plant.name}
+Email: ${email}
+Date: ${new Date().toLocaleString()}
+
+Total Waitlist for ${plant.name}: ${waitlistData.filter(w => w.plantId === plantId).length} people
+            `;
+            
+            const ownerEmail = `mailto:youdubdeveloper@gmail.com?subject=${encodeURIComponent(ownerSubject)}&body=${encodeURIComponent(ownerBody)}`;
+            window.open(ownerEmail, '_blank');
+            
+            showStatus('✅ Added to waitlist! Check your email for confirmation.', 'success');
+            
+            // Clear form
+            document.getElementById('waitlist-email').value = '';
+            document.getElementById('waitlist-plant').value = '';
         }
 
         // Send email to CUSTOMER
@@ -627,20 +884,20 @@ Bitcoin Plant Sale 🌿
             window.open(mailtoLink, '_blank');
         }
 
-        // Send notifications to OWNER (you)
+        // Send notifications to OWNER
         function sendOwnerNotifications(name, email, phone, address, totals) {
             const plantsList = selectedPlants.map(id => {
                 const plant = plants.find(p => p.id === id);
                 return `${plant.name}`;
             }).join(', ');
             
-            // Email to you
+            // Email to owner
             const emailSubject = `💰 Bitcoin Order #${currentOrderNumber} - $${totals.totalUSD.toFixed(2)}`;
             const emailBody = `
 NEW BITCOIN ORDER #${currentOrderNumber}
 
-CUSTOMER DATA (FOR MARKETING):
-------------------------------
+CUSTOMER DATA:
+---------------
 Name: ${name}
 Email: ${email}
 Phone: ${phone}
@@ -652,6 +909,13 @@ Plants: ${plantsList}
 Total: $${totals.totalUSD.toFixed(2)} (${totals.totalBTC.toFixed(6)} BTC)
 Payment: Bitcoin - Awaiting confirmation
 
+INVENTORY UPDATE:
+-----------------
+${selectedPlants.map(id => {
+    const plant = plants.find(p => p.id === id);
+    return `${plant.name}: ${plant.inventory + 1} → ${plant.inventory} left`;
+}).join('\n')}
+
 BITCOIN ADDRESS: ${BITCOIN_ADDRESS}
 Expected Amount: ${totals.totalBTC.toFixed(6)} BTC
 
@@ -659,20 +923,13 @@ SHIP TO:
 --------
 ${name}
 ${address}
-
-MARKETING NOTES:
-----------------
-• Customer value: $${totals.totalUSD.toFixed(2)}
-• Geographic data: ${address.split(',').slice(-2).join(', ')}
-• Add to email marketing list
-• Potential repeat customer
             `;
             
             const ownerEmail = `mailto:youdubdeveloper@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
             window.open(ownerEmail, '_blank');
             
-            // SMS to you
-            const smsMessage = `🌿 Bitcoin order #${currentOrderNumber}: ${name} - $${totals.totalUSD.toFixed(2)} (${totals.totalBTC.toFixed(6)} BTC). Send to: ${BITCOIN_ADDRESS}`;
+            // SMS to owner
+            const smsMessage = `🌿 Order #${currentOrderNumber}: ${name} - $${totals.totalUSD.toFixed(2)} (${totals.totalBTC.toFixed(6)} BTC). Inventory updated.`;
             const smsLink = `sms:+15028139784?&body=${encodeURIComponent(smsMessage)}`;
             window.open(smsLink, '_blank');
         }
@@ -715,118 +972,4 @@ MARKETING NOTES:
                     </div>
                     
                     <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
-                        <h3><i class="fas fa-truck"></i> Shipping</h3>
-                        <p style="white-space: pre-line;">${address}</p>
-                    </div>
-                </div>
-                
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 30px 0;">
-                    <h3><i class="fas fa-shopping-cart"></i> Order Items</h3>
-                    ${selectedPlants.map(id => {
-                        const plant = plants.find(p => p.id === id);
-                        return `<p>${plant.name} - $${plant.price.toFixed(2)}</p>`;
-                    }).join('')}
-                    <hr style="margin: 15px 0;">
-                    <div style="text-align: right;">
-                        <h3>Total: $${totals.totalUSD.toFixed(2)} (${totals.totalBTC.toFixed(6)} BTC)</h3>
-                    </div>
-                </div>
-                
-                <!-- SHIPPING LABEL -->
-                <div style="border: 2px dashed #ccc; padding: 20px; margin-top: 40px;">
-                    <h3 style="text-align: center; color: #2e7d32; border-bottom: 2px solid #2e7d32; padding-bottom: 10px;">
-                        SHIPPING LABEL
-                    </h3>
-                    <div style="display: flex; justify-content: space-between; margin-top: 20px;">
-                        <div>
-                            <h4>FROM:</h4>
-                            <p><strong>Plant Sale</strong><br>
-                            436 East Kentucky St, Apt 201<br>
-                            Louisville, KY 40203<br>
-                            (502) 813-9784</p>
-                        </div>
-                        <div style="text-align: right;">
-                            <h4>TO:</h4>
-                            <p style="font-size: 1.1em; font-weight: bold; white-space: pre-line;">${name}\n${address}</p>
-                        </div>
-                    </div>
-                    <div style="text-align: center; margin-top: 30px;">
-                        <div style="border: 1px solid #000; padding: 10px; display: inline-block; font-family: monospace;">
-                            ORDER#${currentOrderNumber}
-                        </div>
-                        <p style="margin-top: 10px; font-size: 0.9em;">Scan this barcode for tracking</p>
-                    </div>
-                </div>
-                
-                <div style="text-align: center; margin-top: 40px;">
-                    <button class="print-btn" onclick="window.print()">
-                        <i class="fas fa-print"></i> Print Invoice & Shipping Label
-                    </button>
-                    <p style="margin-top: 20px; color: #666; font-size: 0.9em;">
-                        This invoice serves as your shipping label. Cut along dashed line and attach to package.
-                    </p>
-                </div>
-            `;
-            
-            document.getElementById('invoice-preview').innerHTML = invoiceHTML;
-            document.getElementById('invoice-preview').style.display = 'block';
-            document.getElementById('invoice-preview').scrollIntoView({ behavior: 'smooth' });
-            
-            // Save customer data
-            saveCustomerData(name, email, phone, address, totals);
-            
-            // Increment order number
-            currentOrderNumber++;
-        }
-
-        // Save customer data for marketing
-        function saveCustomerData(name, email, phone, address, totals) {
-            const customerData = {
-                orderNumber: currentOrderNumber,
-                date: new Date().toISOString(),
-                customer: { name, email, phone, address },
-                plants: selectedPlants.map(id => plants.find(p => p.id === id).name),
-                totalUSD: totals.totalUSD,
-                totalBTC: totals.totalBTC,
-                bitcoinAddress: BITCOIN_ADDRESS,
-                marketing: {
-                    customerValue: totals.totalUSD,
-                    location: address.split(',').pop().trim(),
-                    acquisitionDate: new Date().toLocaleString()
-                }
-            };
-            
-            // Save to localStorage
-            let database = JSON.parse(localStorage.getItem('bitcoinCustomers') || '[]');
-            database.push(customerData);
-            localStorage.setItem('bitcoinCustomers', JSON.stringify(database));
-            
-            console.log('Customer saved to marketing database:', customerData);
-        }
-
-        // Clear form
-        function clearForm() {
-            document.getElementById('customer-name').value = '';
-            document.getElementById('customer-email').value = '';
-            document.getElementById('customer-phone').value = '';
-            document.getElementById('shipping-address').value = '';
-            
-            selectedPlants = [];
-            document.querySelectorAll('.plant-item.selected').forEach(item => {
-                item.classList.remove('selected');
-            });
-            
-            updateTotal();
-            document.getElementById('status-message').style.display = 'none';
-        }
-
-        // Show status message
-        function showStatus(message, type) {
-            const statusDiv = document.getElementById('status-message');
-            statusDiv.textContent = message;
-            statusDiv.className = `status-message status-${type}`;
-            statusDiv.style.display = 'block';
-        }
-    </script>
-</body>
-</html>
+                        <h3><i class="fas
