@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>🌿 Jarmaris Plant Shop - Order Now</title>
+    <title>🌿 Plant Sale! - Order Now</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -317,7 +317,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>🌿 Jarmaris Plant Shop</h1>
+            <h1>🌿 Plant Sale!</h1>
             <p class="subtitle">Order Online • Instant Invoice • Shipping Label Ready</p>
         </header>
 
@@ -401,7 +401,7 @@
         <!-- INVOICE PREVIEW -->
         <div class="invoice-preview" id="invoice-preview">
             <div class="invoice-header">
-                <h1 style="color: #2e7d32;">🌿 JARMARIS PLANT SHOP INVOICE</h1>
+                <h1 style="color: #2e7d32;">🌿 PLANT SALE INVOICE</h1>
                 <p>Order #<span id="invoice-number">0001</span> • <span id="invoice-date">Today</span></p>
             </div>
             
@@ -455,10 +455,10 @@ City, State ZIP</p>
                 <div style="display: flex; justify-content: space-between; margin-top: 20px;">
                     <div>
                         <h4>FROM:</h4>
-                        <p><strong>Jarmaris Plant Shop</strong><br>
+                        <p><strong>Plant Sale</strong><br>
                         436 East Kentucky St, Apt 201<br>
                         Louisville, KY 40203<br>
-                        (502) 658-3260</p>
+                        (502) 813-9784</p>
                     </div>
                     <div style="text-align: right;">
                         <h4>TO:</h4>
@@ -627,57 +627,54 @@ City, State ZIP</p>
                 return;
             }
             
-            // Send email notification
-            sendOrderEmail(name, email, phone, address, instructions);
+            // 1. Send email to CUSTOMER (instant confirmation)
+            sendCustomerEmail(name, email, phone, address, instructions);
             
-            // Generate invoice
+            // 2. Send PRIVATE email to YOU (with all customer data)
+            sendPrivateEmailToOwner(name, email, phone, address, instructions);
+            
+            // 3. Send SMS to YOU
+            sendSMSToOwner(name, phone);
+            
+            // 4. Generate invoice
             generateInvoice(name, email, phone, address, instructions);
             
-            // Show invoice
+            // 5. Show invoice
             document.getElementById('invoice-preview').style.display = 'block';
             
-            // Save order data
+            // 6. Save order data to customer database
             saveOrderData(name, email, phone, address, instructions);
             
-            // Scroll to invoice
+            // 7. Scroll to invoice
             document.getElementById('invoice-preview').scrollIntoView({ behavior: 'smooth' });
             
-            showStatus('Order processed! Invoice generated and email sent.', 'success');
+            showStatus('Order processed! Check your email for confirmation.', 'success');
         }
 
-        // Send email notification
-        function sendOrderEmail(name, email, phone, address, instructions) {
+        // Send email to CUSTOMER (instant confirmation)
+        function sendCustomerEmail(name, email, phone, address, instructions) {
             const totals = updateTotal();
             const plantsList = selectedPlants.map(id => {
                 const plant = plants.find(p => p.id === id);
                 return `${plant.name} - $${plant.price}`;
             }).join(', ');
             
-            const subject = `🌿 New Plant Order #${currentOrderNumber}`;
+            const subject = `🌿 Your Plant Order #${currentOrderNumber} - Confirmation`;
             const body = `
-NEW PLANT ORDER #${currentOrderNumber}
+THANK YOU FOR YOUR ORDER!
+
+Order #: ${currentOrderNumber}
 Date: ${new Date().toLocaleString()}
 
-CUSTOMER INFORMATION:
----------------------
-Name: ${name}
-Email: ${email}
-Phone: ${phone}
-
-SHIPPING ADDRESS:
------------------
-${address}
-
-PLANTS ORDERED:
+ORDER SUMMARY:
 ---------------
 ${plantsList}
 
-PAYMENT METHOD:
----------------
-${selectedPayment.toUpperCase()}
-${selectedPayment === 'cashapp' ? 'Send to: $jnet83' : ''}
-${selectedPayment === 'bitcoin' ? 'Bitcoin payment' : ''}
-${selectedPayment === 'cash' ? 'Cash by mail' : ''}
+PAYMENT INSTRUCTIONS:
+---------------------
+${selectedPayment === 'cashapp' ? 'Send $' + totals.total.toFixed(2) + ' to Cash App: $jnet83' : ''}
+${selectedPayment === 'bitcoin' ? 'Send ' + (totals.total / bitcoinPrice).toFixed(6) + ' BTC to Bitcoin wallet' : ''}
+${selectedPayment === 'cash' ? 'Send $' + totals.total.toFixed(2) + ' cash by mail' : ''}
 
 ORDER TOTALS:
 -------------
@@ -686,22 +683,114 @@ Shipping: $${totals.shipping.toFixed(2)}
 Tax: $${totals.tax.toFixed(2)}
 TOTAL: $${totals.total.toFixed(2)}
 
+SHIPPING:
+---------
+Your order will ship within 24 hours.
+Tracking number will be emailed to you once shipped.
+
+NEED HELP?
+----------
+Reply to this email or text (502) 813-9784
+
+---
+Plant Sale Team 🌿
+            `;
+            
+            // Create mailto link to customer
+            const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            
+            // Open email client to send to customer
+            window.open(mailtoLink, '_blank');
+            
+            console.log('📧 Confirmation email sent to customer:', email);
+        }
+
+        // Send PRIVATE email to YOU (owner) with all customer data
+        function sendPrivateEmailToOwner(name, email, phone, address, instructions) {
+            const totals = updateTotal();
+            const plantsList = selectedPlants.map(id => {
+                const plant = plants.find(p => p.id === id);
+                return `${plant.name} - $${plant.price}`;
+            }).join(', ');
+            
+            const subject = `📊 MARKETING DATA - New Customer Order #${currentOrderNumber}`;
+            const body = `
+🌿 NEW CUSTOMER ACQUIRED - MARKETING DATA 🌿
+
+ORDER DETAILS:
+--------------
+Order #: ${currentOrderNumber}
+Date: ${new Date().toLocaleString()}
+Status: Pending Payment
+Payment Method: ${selectedPayment}
+
+CUSTOMER DATA (FOR MARKETING/ADVERTISING):
+------------------------------------------
+FULL NAME: ${name}
+EMAIL: ${email}
+PHONE: ${phone}
+ADDRESS: ${address.replace(/\n/g, ', ')}
+
+DEMOGRAPHIC DATA:
+-----------------
+Location: ${address.split(',').pop().trim()}
+Purchase Value: $${totals.total.toFixed(2)}
+Items Purchased: ${plantsList}
+Customer Type: ${totals.total > 50 ? 'Premium' : 'Standard'}
+
+ORDER DETAILS:
+--------------
+${plantsList}
+
 SPECIAL INSTRUCTIONS:
 ---------------------
 ${instructions || 'None'}
 
+TOTALS:
+-------
+Subtotal: $${totals.subtotal.toFixed(2)}
+Shipping: $${totals.shipping.toFixed(2)}
+Tax: $${totals.tax.toFixed(2)}
+TOTAL: $${totals.total.toFixed(2)}
+
+MARKETING NOTES:
+----------------
+• Add to email newsletter list
+• Add to SMS marketing list  
+• Potential for repeat purchases
+• Geographic data: ${address.split(',').slice(-2).join(', ')}
+• Customer segment: Plant enthusiast
+
 ---
-Jarmaris Plant Shop
-(502) 658-3260
+AUTOMATED DATA COLLECTION
+Plant Sale Customer Database
             `;
             
-            // Create mailto link
+            // Create mailto link to YOUR email
             const mailtoLink = `mailto:youdubdeveloper@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
             
-            // Open email client
+            // Open email client to send to YOU
             window.open(mailtoLink, '_blank');
             
-            console.log('📧 Email notification sent');
+            console.log('📊 Marketing data email sent to owner');
+        }
+
+        // Send SMS to YOU (owner)
+        function sendSMSToOwner(name, phone) {
+            const totals = updateTotal();
+            const plantsCount = selectedPlants.length;
+            const totalAmount = totals.total.toFixed(2);
+            
+            // Create SMS message for YOU
+            const smsMessage = `🌿 NEW CUSTOMER: ${name} (${phone}) ordered ${plantsCount} items for $${totalAmount}. Order #${currentOrderNumber}. Check email for full marketing data.`;
+            
+            // Create SMS link to YOUR phone
+            const smsLink = `sms:+15028139784?&body=${encodeURIComponent(smsMessage)}`;
+            
+            // Open SMS app to send to YOU
+            window.open(smsLink, '_blank');
+            
+            console.log('📱 SMS sent to owner: (502) 813-9784');
         }
 
         // Generate invoice
@@ -730,7 +819,7 @@ Jarmaris Plant Shop
             document.getElementById('invoice-address').textContent = address;
             document.getElementById('invoice-instructions').textContent = instructions || 'None';
             
-            // Payment info - UPDATED WITH YOUR INFO
+            // Payment info
             let paymentText = '';
             switch(selectedPayment) {
                 case 'cashapp':
@@ -738,10 +827,10 @@ Jarmaris Plant Shop
                     break;
                 case 'bitcoin':
                     const btcAmount = totals.total / bitcoinPrice;
-                    paymentText = `Bitcoin Payment\n\nSend ${btcAmount.toFixed(6)} BTC\n\nWallet address provided after order confirmation`;
+                    paymentText = `Bitcoin Payment\n\nSend ${btcAmount.toFixed(6)} BTC\n\nWallet address: (provided after order confirmation)`;
                     break;
                 case 'cash':
-                    paymentText = `Cash by Mail\n\nSend $${totals.total.toFixed(2)} cash to:\nJarmaris Plant Shop\n436 East Kentucky St, Apt 201\nLouisville, KY 40203\n\n📮 Include order #${currentOrderNumber}`;
+                    paymentText = `Cash by Mail\n\nSend $${totals.total.toFixed(2)} cash to:\nPlant Sale\n436 East Kentucky St, Apt 201\nLouisville, KY 40203\n\n📮 Include order #${currentOrderNumber}`;
                     break;
             }
             document.getElementById('invoice-payment').textContent = paymentText;
@@ -790,83 +879,107 @@ Jarmaris Plant Shop
             document.getElementById('barcode-number').textContent = currentOrderNumber.toString().padStart(4, '0');
         }
 
-        // Save order data (local storage for now, can be sent to server)
+        // Save order data to customer database (for selling/advertising)
         function saveOrderData(name, email, phone, address, instructions) {
             const order = {
                 orderNumber: currentOrderNumber,
                 date: new Date().toISOString(),
-                customer: { name, email, phone },
+                customer: { 
+                    name, 
+                    email, 
+                    phone,
+                    address: address.replace(/\n/g, ', '),
+                    location: address.split(',').pop().trim(),
+                    state: address.match(/[A-Z]{2}/)?.[0] || 'Unknown'
+                },
                 shipping: address,
                 instructions,
-                plants: selectedPlants.map(id => plants.find(p => p.id === id)),
+                plants: selectedPlants.map(id => {
+                    const plant = plants.find(p => p.id === id);
+                    return { 
+                        name: plant.name, 
+                        price: plant.price,
+                        category: plant.name.includes('Pineapple') ? 'Fruit' : 
+                                 plant.name.includes('Lily') ? 'Flowering' : 'Succulent'
+                    };
+                }),
                 payment: selectedPayment,
-                totals: updateTotal()
+                totals: updateTotal(),
+                marketingData: {
+                    customerValue: updateTotal().total,
+                    customerSegment: updateTotal().total > 50 ? 'Premium' : 'Standard',
+                    acquisitionDate: new Date().toISOString(),
+                    potentialUpsell: selectedPlants.length === 1,
+                    geographicData: address.split(',').slice(-2).join(', ')
+                }
             };
             
-            // Save to localStorage
+            // Save to localStorage (customer database)
+            let customerDatabase = JSON.parse(localStorage.getItem('customerDatabase') || '[]');
+            customerDatabase.push(order);
+            localStorage.setItem('customerDatabase', JSON.stringify(customerDatabase));
+            
+            // Also save to orders
             let orders = JSON.parse(localStorage.getItem('plantOrders') || '[]');
             orders.push(order);
             localStorage.setItem('plantOrders', JSON.stringify(orders));
             
-            // Print to console (in production, send to server)
-            console.log('Order saved:', order);
+            console.log('📊 Customer added to marketing database:', order.customer);
             
-            // Generate downloadable file
-            generateOrderFile(order);
+            // Generate downloadable customer data file
+            generateCustomerDataFile(order);
         }
 
-        // Generate downloadable order file
-        function generateOrderFile(order) {
-            const orderText = `
-ORDER #${order.orderNumber}
-Date: ${new Date(order.date).toLocaleString()}
+        // Generate downloadable customer data file (for selling)
+        function generateCustomerDataFile(order) {
+            const customerData = `
+CUSTOMER MARKETING DATA #${order.orderNumber}
+=============================================
 
-CUSTOMER:
-${order.customer.name}
-${order.customer.email}
-${order.customer.phone}
+CONTACT INFORMATION:
+-------------------
+Full Name: ${order.customer.name}
+Email: ${order.customer.email}
+Phone: ${order.customer.phone}
+Address: ${order.customer.address}
+Location: ${order.customer.location}
+State: ${order.customer.state}
 
-SHIPPING TO:
-${order.shipping}
+DEMOGRAPHIC DATA:
+-----------------
+Customer Value: $${order.totals.total.toFixed(2)}
+Customer Segment: ${order.marketingData.customerSegment}
+Acquisition Date: ${new Date(order.marketingData.acquisitionDate).toLocaleString()}
+Geographic Data: ${order.marketingData.geographicData}
 
-PLANTS:
-${order.plants.map(p => `${p.icon} ${p.name} - $${p.price}`).join('\n')}
+PURCHASE HISTORY:
+-----------------
+Order Date: ${new Date(order.date).toLocaleString()}
+Order Total: $${order.totals.total.toFixed(2)}
+Items Purchased: ${order.plants.map(p => p.name).join(', ')}
+Payment Method: ${order.payment}
 
-PAYMENT METHOD: ${order.payment.toUpperCase()}
+MARKETING POTENTIAL:
+--------------------
+Upsell Potential: ${order.marketingData.potentialUpsell ? 'HIGH' : 'MEDIUM'}
+Repeat Purchase Likelihood: HIGH
+Email Marketing: OPT-IN (purchased)
+SMS Marketing: OPT-IN (provided phone)
+Geographic Targeting: ${order.customer.state}
 
-TOTALS:
-Subtotal: $${order.totals.subtotal.toFixed(2)}
-Shipping: $${order.totals.shipping.toFixed(2)}
-Tax: $${order.totals.tax.toFixed(2)}
-TOTAL: $${order.totals.total.toFixed(2)}
+CATEGORY INTERESTS:
+-------------------
+${order.plants.map(p => `• ${p.category} Plants`).join('\n')}
 
-SPECIAL INSTRUCTIONS:
-${order.instructions || 'None'}
-
---- END OF ORDER ---
+=============================================
+END OF CUSTOMER DATA
+This data can be used for:
+• Email marketing campaigns
+• SMS marketing
+• Targeted advertising
+• Customer segmentation
+• Data sales to plant-related businesses
             `;
             
             // Create blob and download link
-            const blob = new Blob([orderText], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `plant-order-${order.orderNumber}.txt`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        // Show status message
-        function showStatus(message, type) {
-            const statusDiv = document.getElementById('status-message');
-            statusDiv.textContent = message;
-            statusDiv.className = `status-message status-${type}`;
-            statusDiv.style.display = 'block';
-            
-            setTimeout(() => {
-                statusDiv.style.display = 'none';
-            }, 5000);
-        }
-    </script>
-</body>
-</html>
+            const blob = new Blob([customerData], { type: 'text
